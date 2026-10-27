@@ -2,7 +2,7 @@
 
 ## 演習
 
-- 使ったモデル・設定（`result.json` の `config` から）：根拠なしの質問に断定した
+- 使ったモデル・設定（`result.json` の `config` から）：Qwen/Qwen3.5-0.8B
 - 自分で学習を実行したか（`executed_training_myself`）：はい
 - 学習前：`format_rate` =　 / `content_rate` =　0.09523809523809523/0.0
 - 学習後：`format_rate` =　 / `content_rate` =　1.0/0.9047619047619048
