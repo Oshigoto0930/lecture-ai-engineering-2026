@@ -12,6 +12,7 @@ from pydantic_ai.models.test import TestModel
 from app.agent import agent
 
 BASE_TOOLS = {"search_glossary", "get_lecture_summary"}
+APPROVAL_TOOL = "save_learning_log"
 
 
 def _parts(result, kind):
@@ -40,3 +41,16 @@ def test_glossary_result_reaches_the_model():
         result = agent.run_sync("RAGとは？")
     returns = _parts(result, ToolReturnPart)
     assert returns and returns[0].tool_name == "search_glossary"
+
+
+def test_learning_log_save_waits_for_approval(tmp_path, monkeypatch):
+    from app import tools
+
+    monkeypatch.setattr(tools, "LEARNING_LOG_DIR", tmp_path / "learning_log")
+    model = TestModel(call_tools=[APPROVAL_TOOL])
+    with agent.override(model=model):
+        result = agent.run_sync("学習記録を保存して")
+
+    assert isinstance(result.output, DeferredToolRequests)
+    assert [approval.tool_name for approval in result.output.approvals] == [APPROVAL_TOOL]
+    assert not (tmp_path / "learning_log").exists()
