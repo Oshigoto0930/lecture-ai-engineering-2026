@@ -125,7 +125,7 @@ def open_index(path: Path):
 
 
 def search(query: str) -> list[dict]:
-    """質問を埋め込み、近いページを最大RAG_TOP_K件返す。"""
+    """質問を埋め込み、近いページと重複しない前後ページを返す。"""
     if not isinstance(query, str) or not query.strip():
         raise ValueError("検索語が空です。")
     with open_index(RAG_DB) as db:
@@ -135,7 +135,27 @@ def search(query: str) -> list[dict]:
                    vec_distance_cosine(embedding, ?) AS distance
             FROM chunks ORDER BY distance, page_id LIMIT ?
         """, (sqlite_vec.serialize_float32(vector), RAG_TOP_K))
-        return [dict(row) for row in rows]
+        results = [dict(row) for row in rows]
+        included_page_ids = {result["page_id"] for result in results}
+
+        for result in results:
+            previous_page, next_page = result["page"] - 1, result["page"] + 1
+            neighbors = db.execute("""
+                SELECT page_id, document_id, lecture, document_title, section, title, page, content
+                FROM chunks
+                WHERE document_id = ? AND page IN (?, ?)
+                ORDER BY CASE page WHEN ? THEN 0 ELSE 1 END
+            """, (result["document_id"], previous_page, next_page, previous_page))
+            result["adjacent_pages"] = []
+            for neighbor in neighbors:
+                if neighbor["page_id"] in included_page_ids:
+                    continue
+                included_page_ids.add(neighbor["page_id"])
+                result["adjacent_pages"].append({
+                    "relation": "previous" if neighbor["page"] == previous_page else "next",
+                    **dict(neighbor),
+                })
+        return results
 
 
 def search_graph(query: str) -> dict:

@@ -117,7 +117,7 @@ def save_learning_log(content: str) -> str:
         f.write(content)
     return f"学習記録を learning_log/{filename} に保存しました。"
 def search_materials(query: str) -> str:
-    """第1〜3回の本講義資料を検索し、関連ページの本文・タイトル・ページ番号を返す。
+    """第1〜3回の本講義資料を検索し、関連ページと同じ資料内の前後1ページを返す。
 
     queryに調べたい内容を指定する。
     """
